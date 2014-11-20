@@ -1,0 +1,6 @@
+name = CKEditor quick upload
+description = Adds Quick Upload to CKEditor
+package = User interface
+core = 7.x
+
+dependencies[] = libraries

@@ -1,0 +1,89 @@
+<?php
+
+
+// Create permissions
+function ckeditor_quick_upload_permission() {
+  return array(
+    'allow CKFinder file uploads' => array(
+      'title' => t('Allow CKFinder Uploads'),
+      'description' => t('Allow users to upload using CKFinder.'),
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_wysiwyg_editor_settings_alter()
+ */
+function ckeditor_quick_upload_wysiwyg_editor_settings_alter(&$settings, $context) {
+
+  // The $context variable contains information about the wysiwyg profile we're using
+  // In this case we just need to check that the editor being used is ckeditor
+
+  if ($context['profile']->editor == 'ckeditor') {
+
+    // The $settings variable contains all the config options ckeditor uses. 
+    // The array keys correspond directly with any setting that can be applied 
+    // to CKEditor - as outlined in the CKEditor docs: 
+    // http://docs.cksource.com/ckeditor_api/symbols/CKEDITOR.config.html 
+    // Another way to override configuration is to use your own configuration javascript
+    // file. In this case, we're going to add our own configuration file that will
+    // Hold our stylesSet customizations...
+    
+    $ckfinder_path = libraries_get_path('ckfinder');
+    $base_path = base_path();
+    
+    if ($wrapper = file_stream_wrapper_get_instance_by_uri('public://')) {
+      $realpath = $wrapper->realpath();
+    }    
+
+    if (arg(0) == 'node' && is_numeric(arg(1))) {
+      $nodeid = arg(1);
+      $node = node_load( $nodeid );
+      $nodeType = $node->type;
+      // We now have the node type
+
+    }
+
+    // Adding a node
+    if(arg(0) == 'node' && arg(1) == 'add') {
+      $nodeType = str_replace('-','_',arg(2));
+    }
+
+
+    if(empty($nodeType)) {
+      $nodeType = "others";
+    }
+
+    // See if the folder exists - if not, create it *******************************************
+    $dirpath = $realpath . '/images/' . $nodeType;
+    if (!file_exists($dirpath)) {
+      if (!file_prepare_directory($dirpath, FILE_CREATE_DIRECTORY)) {
+        drupal_set_message(t('Subdirectory %dir could not be created.', array('%dir' => $nodeType)), 'error');
+        //continue;
+      }
+    }
+
+    $dirpath = $realpath . '/documents/' . $nodeType;
+
+    if (!file_exists($dirpath)) {
+      if (!file_prepare_directory($dirpath, FILE_CREATE_DIRECTORY)) {
+        drupal_set_message(t('Subdirectory %dir could not be created.', array('%dir' => $nodeType)), 'error');
+        //continue;
+      }
+    }
+
+    if(isset($settings['filebrowserBrowseUrl'])) {
+      $settings['filebrowserBrowseUrl'] = $settings['filebrowserBrowseUrl'] . "&dir=documents/" . $nodeType;
+      $settings['filebrowserImageBrowseUrl'] = $settings['filebrowserBrowseUrl'] . "&dir=images/" . $nodeType;
+
+      $settings['filebrowserUploadUrl'] = $base_path . $ckfinder_path
+        . '/core/connector/php/connector.php?command=QuickUpload&type=Files&currentFolder=/' . $nodeType  . '/';
+      $settings['filebrowserImageUploadUrl'] = $base_path . $ckfinder_path
+        . '/core/connector/php/connector.php?command=QuickUpload&type=Images&currentFolder=/' . $nodeType  . '/';
+    }
+    // To see what's in $settings and $context, install the devel module 
+    // And run the variables through the dpm() function.
+
+  }
+}
